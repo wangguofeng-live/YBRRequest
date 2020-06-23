@@ -8,12 +8,10 @@
 
 #import <Foundation/Foundation.h>
 
-#import "YBRAsyncActionProtocol.h"
 #import "YBRFormable.h"
 #import "YBRRequestFormable.h"
 
 #import "YBRResponse.h"
-
 
 
 /**
@@ -24,6 +22,8 @@ FOUNDATION_EXPORT NSErrorDomain const YBRRequestErrorDomain;
 
 #define YBRRequestErrorDomain_Code_ServiceError 20000 //服务器发送的错误信息
 #define YBRRequestErrorDomain_Code_TokenInvalid 10000
+
+@protocol YBRAsyncActionProtocol;
 
 typedef NS_ENUM(NSUInteger, YBRResponseHandlerStatus) {
     YBRResponseHandlerStatus_Success,   //成功
