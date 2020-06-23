@@ -10,13 +10,18 @@
 
 #import <AFNetworking/AFNetworking.h>
 
-#import "YBRUtilities.h"
-
 #import "YBRRequestProxy.h"
 #import "YBRRequestFileData.h"
 
 #define YBRREQUEST_UPLOAD_TIMEOUTINTERVAL 120 //上传文件请求超时时间
 #define YBRREQUEST_DEFAULT_TIMEOUTINTERVAL 20 //默认请求超时时间
+
+#define kWeakSelf(type)   __weak typeof(type) weak##type = type;
+#define kStrongSelf(type) __strong typeof(type) type = weak##type;
+///是否为空
+#define IsNotNilOrNull(obj) (obj && ![obj isEqual:[NSNull null]])
+///字符串是否为空
+#define IsNotNilOrNullOrEmpty(obj) (IsNotNilOrNull(obj) && ![obj isEqual:@""])
 
 NSErrorDomain const YBRRequestErrorDomain = @"YBRRequestErrorDomain";
 
@@ -135,7 +140,8 @@ static id <YBRResponseHandlerProtocol> s_pResponseHandler = nil;
 }
 
 - (void)_setupStartTime {
-    kStartTime //开始计时
+    //开始计时
+    CFAbsoluteTime start = CFAbsoluteTimeGetCurrent();
     _start_time = start;
 }
 
@@ -278,7 +284,7 @@ REQUEST_SUSPEND:    //请求中止，不做任何事情
     }
 }
 
-#pragma mark - YBRAsyncActionProtocol
+#pragma mark - YBRRequestToken
 - (void)Cancel
 {
     [self.dataTask cancel];

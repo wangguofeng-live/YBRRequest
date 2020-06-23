@@ -33,39 +33,6 @@
     return [NSSet setWithObjects:@"application/json",@"text/json", @"text/plain", @"text/html", nil];
 }
 
-//- (void)StartRequestWithSuccess:(void(^)(YBRRequest* argRequest))argSuccess failure:(void(^)(YBRRequest* argRequest, NSError* argError))argFailure
-//{
-//    kWeakSelf(self)
-//    kStartTime //开始计时
-//    _start_time = start;
-//
-//    // Start the post request
-//    self.dataTask = [pHttpSessionManager POST:m_strUrl
-//                                   parameters:m_dicParams headers:nil
-//                    constructingBodyWithBlock:^(id<AFMultipartFormData>  _Nonnull formData) {
-//       //挂载文件
-//        kStrongSelf(self)
-//        for (YBRRequestFileData *pFileData in self.fileDataArray) {
-//            [formData appendPartWithFileData:pFileData.fileData name:pFileData.name fileName:pFileData.fileName mimeType:pFileData.mimeType];
-//        }
-//    } progress:^(NSProgress * _Nonnull uploadProgress) {
-//
-//    } success:^(NSURLSessionDataTask * _Nonnull task, id  _Nullable responseObject) {
-//
-//        YBRResponse *pResponse = [[YBRResponse alloc] initWithRequest:self];
-//        pResponse.responseObject = responseObject;
-//        [self disposeRequestSuccessWihtResponse:pResponse];
-//
-//    } failure:^(NSURLSessionDataTask * _Nullable task, NSError * _Nonnull error) {
-//        m_bSucceed = NO;
-//
-//        YBRResponse *pResponse = [[YBRResponse alloc] initWithRequest:self];
-//
-//        [self disposeRequestFailureWihtResponse:pResponse andError:error];
-//
-//    }];
-//}
-
 - (void)request:(YBRRequest *)request Success:(void(^)(YBRResponse* argResponse))argSuccess Failure:(void(^)(YBRResponse* argResponse, NSError* argError))argFailure {
     
     // Setup the http manager
@@ -141,36 +108,36 @@
 //              Success:(void(^)(YBRResponse* argResponse))argSuccess
 //              Failure:(void(^)(YBRResponse* argResponse, NSError* argError))argFailure {
 //    // Setup the http manager
-//    
+//
 //    AFHTTPSessionManager* pHttpSessionManager = [AFHTTPSessionManager manager];
 //    pHttpSessionManager.responseSerializer.acceptableContentTypes = [YBRRequestProxy acceptableContentTypes];
 //    [pHttpSessionManager.requestSerializer setTimeoutInterval:120];
-//    
+//
 //    // Start the post request
 //    self.dataTask = [pHttpSessionManager POST:request.url
 //                                   parameters:request.parameters
 //                    constructingBodyWithBlock:^(id <AFMultipartFormData> formData) {
-//                        
+//
 //                        for (YBRUploadData *pUploadData in request.uploadData) {
-//                            
+//
 //                            [formData appendPartWithFileData:pUploadData.data name:pUploadData.name fileName:pUploadData.fileName mimeType:pUploadData.mimeType];
 //                        }
-//                        
+//
 //                    }
 //                                     progress:^(NSProgress * _Nonnull uploadProgress) {
-//                                         
+//
 //                                     } success:^(NSURLSessionDataTask * _Nonnull task, id  _Nullable responseObject) {
 //                                         YBRResponse *pResponse = [[YBRResponse alloc] initWithRequest:request];
 //                                         pResponse.responseObject = responseObject;
-//                                         
+//
 //                                         if(argSuccess) argSuccess(pResponse);
 //                                     }
 //                                      failure:^(NSURLSessionDataTask * _Nullable task, NSError * _Nonnull error) {
 //                                          YBRResponse *pResponse = [[YBRResponse alloc] initWithRequest:request];
-//                                          
+//
 //                                          if(argFailure) argFailure(pResponse, error);
 //                                      }];
-//    
+//
 //}
 
 - (void)downloadWithURL:(NSString*)argURL
@@ -178,7 +145,7 @@
 {
     NSArray *array = [argURL componentsSeparatedByString:@"/"]; //从字符A中分隔成2个元素的数组
     NSString* strFileName = [array lastObject];
-    BOOL bIsExist = [YBRUtilities isFileExist:strFileName];
+    BOOL bIsExist = [self _isFileExist:strFileName];
     if (bIsExist == YES) {
         return;
     }
@@ -228,6 +195,17 @@
     
     //3.执行Task
     [download resume];
+}
+
+#pragma mark - 判断文件是否已经在沙盒中已经存在
+- (BOOL)_isFileExist:(NSString *)fileName
+{
+    NSArray *paths = NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES);
+    NSString *path = [paths objectAtIndex:0];
+    NSString *filePath = [path stringByAppendingPathComponent:fileName];
+    NSFileManager *fileManager = [NSFileManager defaultManager];
+    BOOL result = [fileManager fileExistsAtPath:filePath];
+    return result;
 }
 
 #pragma mark - 检查网络是否通畅
