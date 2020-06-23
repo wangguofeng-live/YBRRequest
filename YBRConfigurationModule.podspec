@@ -16,7 +16,7 @@ Pod::Spec.new do |s|
   #
 
   s.name         = "YBRRequest"
-  s.version      = "0.0.2"
+  s.version      = "0.0.3"
   s.summary      = "A short description of YBRRequest."
 
   # This description is used to generate tags and improve search results.
@@ -26,7 +26,7 @@ Pod::Spec.new do |s|
   #   * Finally, don't worry about the indent, CocoaPods strips it!
   s.description  = 'YBR 使用的网络模块'
 
-  s.homepage     = "http://EXAMPLE/YBRRequest"
+  s.homepage     = "https://github.com/wangguofeng-live/YBRRequest"
   # s.screenshots  = "www.example.com/screenshots_1.gif", "www.example.com/screenshots_2.gif"
 
 
@@ -132,6 +132,6 @@ Pod::Spec.new do |s|
 
   # s.xcconfig = { "HEADER_SEARCH_PATHS" => "$(SDKROOT)/usr/include/libxml2" }
   # s.dependency "JSONKit", "~> 1.4"
-  s.dependency "AFNetworking"
+  s.dependency "AFNetworking", "~> 4.0.1"
 
 end
