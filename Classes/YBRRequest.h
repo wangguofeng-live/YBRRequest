@@ -22,7 +22,7 @@ YBRRequest Error Domain
 FOUNDATION_EXPORT NSErrorDomain const YBRRequestErrorDomain;
 
 #define YBRRequestErrorDomain_Code_ServiceError 20000 //服务器发送的错误信息
-#define YBRRequestErrorDomain_Code_TokenInvalid 10000
+#define YBRRequestErrorDomain_Code_Success_Failure_Dedirect 10300 //成功重定向
 
 typedef NS_ENUM(NSUInteger, YBRResponseHandlerStatus) {
     YBRResponseHandlerStatus_Success,   //成功

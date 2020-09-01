@@ -229,18 +229,7 @@ REQUEST_SUCCESS:       //请求完成
 REQUEST_FAILURE:       //请求强制失败
     m_bSucceed = NO;
     
-    if(self.FailureBlock) {
-        NSString* strErrorMsg = (NSString*)[m_dicResponse valueForKey:@"ErrorMsg"];
-        
-        NSDictionary *dicUserInfo = nil;
-        if (IsNotNilOrNullOrEmpty(strErrorMsg)) {
-            dicUserInfo = @{NSLocalizedDescriptionKey: strErrorMsg};
-        }else{
-            dicUserInfo = @{};
-        }
-        
-        self.FailureBlock(argResponse, [NSError errorWithDomain:YBRRequestErrorDomain code:YBRRequestErrorDomain_Code_TokenInvalid userInfo:dicUserInfo]);
-    }
+    [self disposeRequestFailureWihtResponse:argResponse andError:[NSError errorWithDomain:YBRRequestErrorDomain code:YBRRequestErrorDomain_Code_Success_Failure_Dedirect userInfo:nil]];
     return;
     
 REQUEST_SUSPEND:    //请求中止，不做任何事情
@@ -251,7 +240,7 @@ REQUEST_SUSPEND:    //请求中止，不做任何事情
     m_bSucceed = NO;
     
     //返回信息打印
-    if (s_pResponseHandler && [s_pResponseHandler respondsToSelector:@selector(ybr_responsePrint:)]) {
+    if (argError && s_pResponseHandler && [s_pResponseHandler respondsToSelector:@selector(ybr_responsePrint:)]) {
         BOOL bPrint = [s_pResponseHandler ybr_responsePrint:self];
         if (bPrint) {
             NSLog(@"TAG: %@\nREQUEST: %@\nDuration: %fs\nJSON: %@", m_strRequestTag, m_strUrl, CFAbsoluteTimeGetCurrent() - _start_time, [argError localizedDescription]);

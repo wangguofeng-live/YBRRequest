@@ -16,7 +16,7 @@ Pod::Spec.new do |s|
   #
 
   s.name         = "YBRRequest"
-  s.version      = "0.0.6"
+  s.version      = "0.0.7"
   s.summary      = "A short description of YBRRequest."
 
   # This description is used to generate tags and improve search results.
