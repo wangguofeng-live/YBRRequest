@@ -92,8 +92,6 @@ static id <YBRResponseHandlerProtocol> s_pResponseHandler = nil;
 #pragma mark -
 - (void)SetParamValue:(NSString*)argValue forKey:(NSString *)argKey {
     // Set the normal parameter
-//    [m_dicParams setObject:argValue forKey:argKey];
-
     /**
      此处进行了修改
      1, setObject：forkey：中value是不能够为nil的，不然会报错。
