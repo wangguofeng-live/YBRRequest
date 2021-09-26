@@ -35,8 +35,11 @@
 
 - (void)request:(YBRRequest *)request Success:(void(^)(YBRResponse* argResponse))argSuccess Failure:(void(^)(YBRResponse* argResponse, NSError* argError))argFailure {
     
+    NSURL *requestURL = [NSURL URLWithString:request.url];
+    NSString *baseUrl = [NSString stringWithFormat:@"%@://%@",requestURL.scheme, requestURL.host];
+    
     // Setup the http manager
-    AFHTTPSessionManager* pHttpSessionManager = [AFHTTPSessionManager manager];
+    AFHTTPSessionManager* pHttpSessionManager = [[AFHTTPSessionManager alloc] initWithBaseURL:[NSURL URLWithString:baseUrl]];
     
     //content types
     pHttpSessionManager.responseSerializer.acceptableContentTypes = [YBRRequestProxy acceptableContentTypes]; //接收类型
