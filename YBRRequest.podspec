@@ -16,15 +16,15 @@ Pod::Spec.new do |s|
   #
 
   s.name         = "YBRRequest"
-  s.version      = "0.0.9"
-  s.summary      = "A short description of YBRRequest."
+  s.version      = "0.0.10"
+  s.summary      = "YBRRequest 网路通讯库"
 
   # This description is used to generate tags and improve search results.
   #   * Think: What does it do? Why did you write it? What is the focus?
   #   * Try to keep it short, snappy and to the point.
   #   * Write the description between the DESC delimiters below.
   #   * Finally, don't worry about the indent, CocoaPods strips it!
-  s.description  = 'YBR 使用的网络模块'
+  s.description  = 'YBR 使用的网络模块，依赖于AFNetworking的封装。'
 
   s.homepage     = "https://github.com/wangguofeng-live/YBRRequest"
   # s.screenshots  = "www.example.com/screenshots_1.gif", "www.example.com/screenshots_2.gif"
@@ -63,10 +63,10 @@ Pod::Spec.new do |s|
   #
 
   # s.platform     = :ios
-  s.platform     = :ios, "8.0"
+  # s.platform     = :ios, "8.0"
 
   #  When using multiple platforms
-  s.ios.deployment_target = "8.0"
+  s.ios.deployment_target = "9.0"
   # s.osx.deployment_target = "10.7"
   # s.watchos.deployment_target = "2.0"
   # s.tvos.deployment_target = "9.0"
@@ -78,7 +78,7 @@ Pod::Spec.new do |s|
   #  Supports git, hg, bzr, svn and HTTP.
   #
 
-  s.source       = { :git => "", :tag => "#{s.version}" }
+  s.source       = { :git => "https://github.com/wangguofeng-live/YBRRequest.git", :tag => "#{s.version}" }
 
 
   # ――― Source Code ―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――― #

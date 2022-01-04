@@ -54,7 +54,7 @@
     switch (request.method) {
         case YBRFormableMethod_POST:
         {
-            self.dataTask = [pHttpSessionManager POST:request.url parameters:request.parameters headers:nil constructingBodyWithBlock:^(id<AFMultipartFormData>  _Nonnull formData) {
+            self.dataTask = [pHttpSessionManager POST:request.url parameters:request.parameters headers:request.headers constructingBodyWithBlock:^(id<AFMultipartFormData>  _Nonnull formData) {
                 
                 //挂载文件
                  for (YBRRequestFileData *pFileData in [request getFileDataArray]) {
@@ -80,7 +80,7 @@
             break;
         case YBRFormableMethod_GET:
         {
-            self.dataTask = [pHttpSessionManager GET:request.url parameters:request.parameters headers:nil progress:^(NSProgress * _Nonnull uploadProgress) {
+            self.dataTask = [pHttpSessionManager GET:request.url parameters:request.parameters headers:request.headers progress:^(NSProgress * _Nonnull uploadProgress) {
                 
             } success:^(NSURLSessionDataTask * _Nonnull task, id  _Nullable responseObject) {
                 

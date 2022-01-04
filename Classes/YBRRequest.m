@@ -28,6 +28,8 @@ NSErrorDomain const YBRRequestErrorDomain = @"YBRRequestErrorDomain";
 @interface YBRRequest ()
 {
     CFAbsoluteTime _start_time;
+    
+    BOOL _isBaseUrl;
 }
 
 @property (nonatomic, strong)NSURLSessionDataTask *dataTask;
@@ -59,6 +61,7 @@ static id <YBRResponseHandlerProtocol> s_pResponseHandler = nil;
 - (id)initWithUrl:(NSString*)argUrl andTag:(NSString*)argTag
 {
     if (self = [super init]) {
+        _isBaseUrl = NO;
         m_strUrl = argUrl;
         m_strRequestTag = argTag;
         m_dicParams = [[NSMutableDictionary alloc] init];
@@ -76,6 +79,28 @@ static id <YBRResponseHandlerProtocol> s_pResponseHandler = nil;
     }
     return self;
 }
+
+- (id)initWithBaseUrl:(NSString *)argBaseUrl andTag:(NSString *)argTag {
+    if (self = [super init]) {
+        _isBaseUrl = YES;
+        m_strUrl = argBaseUrl;
+        m_strRequestTag = argTag;
+        m_dicParams = [[NSMutableDictionary alloc] init];
+        m_dicResponse = nil;
+        
+        m_bSilent = NO;
+        m_bSucceed = NO;
+        
+        self.timeoutInterval = YBRREQUEST_DEFAULT_TIMEOUTINTERVAL;
+        self.httpMethod = YBRFormableMethod_POST;
+        
+        //填充默认参数
+        [self _fillDefaultParams];
+        
+    }
+    return self;
+}
+
 
 - (void)StartRequestWithSuccess:(void(^)(YBRRequest* argRequest))argSuccess failure:(void(^)(YBRRequest* argRequest, NSError* argError))argFailure
 {
@@ -197,7 +222,7 @@ static id <YBRResponseHandlerProtocol> s_pResponseHandler = nil;
     if (s_pResponseHandler && [s_pResponseHandler respondsToSelector:@selector(ybr_responsePrint:)]) {
         BOOL bPrint = [s_pResponseHandler ybr_responsePrint:self];
         if (bPrint) {
-            NSLog(@"TAG: %@\nREQUEST: %@\nDuration: %fs\nJSON: %@", m_strRequestTag, m_strUrl, CFAbsoluteTimeGetCurrent() - _start_time, m_dicResponse);
+            NSLog(@"【REQUEST】\nURL:%@ TAG: %@\nSTATUS:SUCCESS\nHEADER: %@\nPARAMS: %@\nDuration: %fs\nJSON: %@", self.url, m_strRequestTag, [self.headers description], [self.parameters description], CFAbsoluteTimeGetCurrent() - _start_time, m_dicResponse);
         }
     }
     
@@ -241,7 +266,7 @@ REQUEST_SUSPEND:    //请求中止，不做任何事情
     if (argError && s_pResponseHandler && [s_pResponseHandler respondsToSelector:@selector(ybr_responsePrint:)]) {
         BOOL bPrint = [s_pResponseHandler ybr_responsePrint:self];
         if (bPrint) {
-            NSLog(@"TAG: %@\nREQUEST: %@\nDuration: %fs\nJSON: %@", m_strRequestTag, m_strUrl, CFAbsoluteTimeGetCurrent() - _start_time, [argError localizedDescription]);
+            NSLog(@"【REQUEST】\nURL:%@ TAG: %@\nSTATUS:FAILURE\nHEADER: %@\nPARAMS: %@\nDuration: %fs\nJSON: %@", self.url, m_strRequestTag, [self.headers description], [self.parameters description], CFAbsoluteTimeGetCurrent() - _start_time, [argError localizedDescription]);
         }
     }
     
@@ -265,8 +290,8 @@ REQUEST_SUSPEND:    //请求中止，不做任何事情
 // 私有方法 填充默认参数
 - (void)_fillDefaultParams {
     
-    if (s_pParmsProvider && [s_pParmsProvider respondsToSelector:@selector(ybr_paramsWithUrl:andTag:)]) {
-        NSDictionary *dicParams = [s_pParmsProvider ybr_paramsWithUrl:m_strUrl andTag:m_strRequestTag];
+    if (s_pParmsProvider && [s_pParmsProvider respondsToSelector:@selector(ybr_paramsWithUrl:andTag:forRequest:)]) {
+        NSDictionary *dicParams = [s_pParmsProvider ybr_paramsWithUrl:m_strUrl andTag:m_strRequestTag forRequest:self];
         [self SetParamValues:dicParams];
     }
 }
@@ -283,7 +308,36 @@ REQUEST_SUSPEND:    //请求中止，不做任何事情
 
 #pragma mark - YBRRequestFormable
 - (NSString *)url {
-    return m_strUrl;
+    
+    if (_isBaseUrl) {
+        NSURLComponents *urlComponents = [NSURLComponents componentsWithString:[NSString stringWithFormat:@"%@%@",m_strUrl,m_strRequestTag]];
+        
+        if (s_pParmsProvider && [s_pParmsProvider respondsToSelector:@selector(ybr_qureyItemsWithUrl:andTag:forRequest:)]) {
+            
+            NSDictionary *dicQureyItems = [s_pParmsProvider ybr_qureyItemsWithUrl:m_strUrl andTag:m_strRequestTag forRequest:self];
+            
+            NSMutableArray<NSURLQueryItem *> *arrQureyItems = [NSMutableArray array];
+            
+            //添加原有参数
+            if (urlComponents.queryItems.count > 0) {
+                [arrQureyItems addObjectsFromArray:urlComponents.queryItems];
+            }
+            
+            //附加参数
+            for (NSString *key in dicQureyItems.allKeys) {
+                
+                NSURLQueryItem *qi = [NSURLQueryItem queryItemWithName:key value:dicQureyItems[key]];
+                
+                [arrQureyItems addObject:qi];
+            }
+            
+            urlComponents.queryItems = arrQureyItems;
+        }
+        
+        return urlComponents.string;
+    }else {
+        return m_strUrl;
+    }
 }
 
 - (YBRFormableMethod)method {
@@ -291,6 +345,9 @@ REQUEST_SUSPEND:    //请求中止，不做任何事情
 }
 
 - (NSDictionary<NSString *,NSString *> *)headers {
+    if (s_pParmsProvider && [s_pParmsProvider respondsToSelector:@selector(ybr_headersWithUrl:andTag:forRequest:)]) {
+        return [s_pParmsProvider ybr_headersWithUrl:m_strUrl andTag:m_strRequestTag forRequest:self];
+    }
     return @{};
 }
 

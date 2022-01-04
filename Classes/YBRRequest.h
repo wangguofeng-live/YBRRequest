@@ -38,7 +38,9 @@ typedef void(^YBRRequestFailureBlock)(YBRResponse* argResponse, NSError* argErro
 @protocol YBRRequestParamsProviderProtocol <NSObject>
 
 @optional
-- (NSDictionary *)ybr_paramsWithUrl:(NSString*)argUrl andTag:(NSString*)argTag;
+- (NSDictionary *)ybr_paramsWithUrl:(NSString*)argUrl andTag:(NSString*)argTag forRequest:(YBRRequest *)request;
+- (NSDictionary *)ybr_headersWithUrl:(NSString*)argUrl andTag:(NSString*)argTag forRequest:(YBRRequest *)request;
+- (NSDictionary *)ybr_qureyItemsWithUrl:(NSString*)argUrl andTag:(NSString*)argTag forRequest:(YBRRequest *)request;
 
 - (AFSecurityPolicy *)ybr_securityPolicy;
 
@@ -97,7 +99,20 @@ YBRRequestToken
  */
 @property (nonatomic , assign) NSTimeInterval timeoutInterval;
 
-// Initialization
+#pragma mark - Initialization
+
+/**
+ 初始化
+ BaseUrl 传入完整的BaseUrl
+ Tag 标记并会拼接到BaseUrl之后
+ */
+- (id)initWithBaseUrl:(NSString*)argBaseUrl andTag:(NSString*)argTag;
+
+/**
+ 初始化
+ Url 传入完整的Url
+ Tag 只做标记不参与实际请求
+ */
 - (id)initWithUrl:(NSString*)argUrl andTag:(NSString*)argTag;
 
 // Start the asynchronous request
