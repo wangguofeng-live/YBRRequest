@@ -49,16 +49,16 @@ typedef void(^YBRRequestFailureBlock)(YBRResponse* argResponse, NSError* argErro
 @protocol YBRResponseHandlerProtocol <NSObject>
 
 @optional
-- (YBRResponseHandlerStatus)ybr_responseSuccess:(YBRRequest *)argRequest;
+- (YBRResponseHandlerStatus)ybr_responseSuccess:(YBRResponse *)argResponse;
 
 /**
  处理失败信息
  return 返回新的错误信息(NSError) 用于替代原有错误信息
  */
-- (NSError *)ybr_responseFailure:(YBRRequest *)argRequest Error:(NSError *)argError;
+- (NSError *)ybr_responseFailure:(YBRResponse *)argResponse Error:(NSError *)argError;
 
 //是否打印信息
-- (BOOL)ybr_responsePrint:(YBRRequest *)argRequest;
+- (BOOL)ybr_responsePrint:(YBRResponse *)argResponse;
 
 @end
 

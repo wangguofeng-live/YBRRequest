@@ -218,17 +218,19 @@ static id <YBRResponseHandlerProtocol> s_pResponseHandler = nil;
         m_dicResponse = argResponse.responseObject;
     }
     
+    argResponse.responseDuration = CFAbsoluteTimeGetCurrent() - _start_time;
+    
     //返回信息打印
     if (s_pResponseHandler && [s_pResponseHandler respondsToSelector:@selector(ybr_responsePrint:)]) {
-        BOOL bPrint = [s_pResponseHandler ybr_responsePrint:self];
+        BOOL bPrint = [s_pResponseHandler ybr_responsePrint:argResponse];
         if (bPrint) {
-            NSLog(@"【REQUEST】\nURL:%@ TAG: %@\nSTATUS:SUCCESS\nHEADER: %@\nPARAMS: %@\nDuration: %fs\nJSON: %@", self.url, m_strRequestTag, [self.headers description], [self.parameters description], CFAbsoluteTimeGetCurrent() - _start_time, m_dicResponse);
+            NSLog(@"【REQUEST】\nURL:%@ TAG: %@\nSTATUS:SUCCESS\nHEADER: %@\nPARAMS: %@\nDuration: %fs\nJSON: %@", self.url, m_strRequestTag, [self.headers description], [self.parameters description], argResponse.responseDuration, m_dicResponse);
         }
     }
     
     //处理返回结果
     if (s_pResponseHandler && [s_pResponseHandler respondsToSelector:@selector(ybr_responseSuccess:)]) {
-        YBRResponseHandlerStatus status = [s_pResponseHandler ybr_responseSuccess:self];
+        YBRResponseHandlerStatus status = [s_pResponseHandler ybr_responseSuccess:argResponse];
         switch (status) {
             case YBRResponseHandlerStatus_Success:  //成功
                 goto REQUEST_SUCCESS;
@@ -262,17 +264,19 @@ REQUEST_SUSPEND:    //请求中止，不做任何事情
 - (void)disposeRequestFailureWihtResponse:(YBRResponse *)argResponse andError:(NSError *)argError {
     m_bSucceed = NO;
     
+    argResponse.responseDuration = CFAbsoluteTimeGetCurrent() - _start_time;
+    
     //返回信息打印
     if (argError && s_pResponseHandler && [s_pResponseHandler respondsToSelector:@selector(ybr_responsePrint:)]) {
-        BOOL bPrint = [s_pResponseHandler ybr_responsePrint:self];
+        BOOL bPrint = [s_pResponseHandler ybr_responsePrint:argResponse];
         if (bPrint) {
-            NSLog(@"【REQUEST】\nURL:%@ TAG: %@\nSTATUS:FAILURE\nHEADER: %@\nPARAMS: %@\nDuration: %fs\nJSON: %@", self.url, m_strRequestTag, [self.headers description], [self.parameters description], CFAbsoluteTimeGetCurrent() - _start_time, [argError localizedDescription]);
+            NSLog(@"【REQUEST】\nURL:%@ TAG: %@\nSTATUS:FAILURE\nHEADER: %@\nPARAMS: %@\nDuration: %fs\nJSON: %@", self.url, m_strRequestTag, [self.headers description], [self.parameters description], argResponse.responseDuration, [argError localizedDescription]);
         }
     }
     
     //处理返回结果
     if (s_pResponseHandler && [s_pResponseHandler respondsToSelector:@selector(ybr_responseFailure:Error:)]) {
-        id obj = [s_pResponseHandler ybr_responseFailure:self Error:argError];
+        id obj = [s_pResponseHandler ybr_responseFailure:argResponse Error:argError];
         if ([obj isKindOfClass:[NSError class]]) {
 
             if(self.FailureBlock) {

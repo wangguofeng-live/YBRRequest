@@ -16,6 +16,8 @@
 
 -(instancetype)initWithRequest:(YBRRequest *)request;
 
+@property (nonatomic,assign)NSTimeInterval responseDuration;
+
 @property (nonatomic, strong)id responseObject;
 
 @end
