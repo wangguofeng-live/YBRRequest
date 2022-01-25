@@ -27,8 +27,6 @@ NSErrorDomain const YBRRequestErrorDomain = @"YBRRequestErrorDomain";
 
 @interface YBRRequest ()
 {
-    CFAbsoluteTime _start_time;
-    
     BOOL _isBaseUrl;
 }
 
@@ -162,17 +160,9 @@ static id <YBRResponseHandlerProtocol> s_pResponseHandler = nil;
     self.timeoutInterval = YBRREQUEST_UPLOAD_TIMEOUTINTERVAL;
 }
 
-- (void)_setupStartTime {
-    //开始计时
-    CFAbsoluteTime start = CFAbsoluteTimeGetCurrent();
-    _start_time = start;
-}
-
 #pragma mark -
 - (void)StartGETRequestWithSuccess:(YBRRequestSuccessBlock)argSuccess
                         andFailure:(YBRRequestFailureBlock)argFailure {
-    
-    [self _setupStartTime]; //设置计时器
     
     self.successBlock = argSuccess;
     self.FailureBlock = argFailure;
@@ -192,8 +182,6 @@ static id <YBRResponseHandlerProtocol> s_pResponseHandler = nil;
 
 - (void)StartPOSTRequestWithSuccess:(YBRRequestSuccessBlock)argSuccess
                          andFailure:(YBRRequestFailureBlock)argFailure {
-    
-    [self _setupStartTime]; //设置计时器
     
     self.FailureBlock = argFailure;
     self.successBlock = argSuccess;
@@ -217,8 +205,6 @@ static id <YBRResponseHandlerProtocol> s_pResponseHandler = nil;
     if (IsNotNilOrNull(argResponse.responseObject)) {
         m_dicResponse = argResponse.responseObject;
     }
-    
-    argResponse.responseDuration = CFAbsoluteTimeGetCurrent() - _start_time;
     
     //返回信息打印
     if (s_pResponseHandler && [s_pResponseHandler respondsToSelector:@selector(ybr_responsePrint:)]) {
@@ -263,8 +249,6 @@ REQUEST_SUSPEND:    //请求中止，不做任何事情
 
 - (void)disposeRequestFailureWihtResponse:(YBRResponse *)argResponse andError:(NSError *)argError {
     m_bSucceed = NO;
-    
-    argResponse.responseDuration = CFAbsoluteTimeGetCurrent() - _start_time;
     
     //返回信息打印
     if (argError && s_pResponseHandler && [s_pResponseHandler respondsToSelector:@selector(ybr_responsePrint:)]) {

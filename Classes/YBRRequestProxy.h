@@ -19,11 +19,6 @@
         Success:(void(^)(YBRResponse* argResponse))argSuccess
         Failure:(void(^)(YBRResponse* argResponse, NSError* argError))argFailure;
 
-
-//- (void)uploadRequest:(YBRRequest<YBRUploadFormable> *)request
-//              Success:(void(^)(YBRResponse* argResponse))argSuccess
-//              Failure:(void(^)(YBRResponse* argResponse, NSError* argError))argFailure;
-
 - (void)downloadWithURL:(NSString*)argURL
                 Success:(void(^)(void))argSuccess;
 

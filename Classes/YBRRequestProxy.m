@@ -18,9 +18,6 @@
 #import "YBRRequestFileData.h"
 
 @interface YBRRequestProxy ()
-{
-    id m_pResponse;
-}
 
 @property (nonatomic, strong)NSURLSessionDataTask *dataTask;
 
@@ -40,6 +37,13 @@
     
     // Setup the http manager
     AFHTTPSessionManager* pHttpSessionManager = [[AFHTTPSessionManager alloc] initWithBaseURL:[NSURL URLWithString:baseUrl]];
+    
+    // reqeust duration
+    __block NSTimeInterval taskIntervalDuration = 0;
+    [pHttpSessionManager setTaskDidFinishCollectingMetricsBlock:^(NSURLSession * _Nonnull session, NSURLSessionTask * _Nonnull task, NSURLSessionTaskMetrics * _Nullable metrics) {
+        taskIntervalDuration = metrics.taskInterval.duration;
+    }];
+    
     
     //content types
     pHttpSessionManager.responseSerializer.acceptableContentTypes = [YBRRequestProxy acceptableContentTypes]; //接收类型
@@ -67,11 +71,13 @@
                 
                 YBRResponse *pResponse = [[YBRResponse alloc] initWithRequest:request];
                 pResponse.responseObject = responseObject;
+                pResponse.responseDuration = taskIntervalDuration;
                 m_pResponse = responseObject;
                 if(argSuccess) argSuccess(pResponse);
             } failure:^(NSURLSessionDataTask * _Nullable task, NSError * _Nonnull error) {
                 
                 YBRResponse *pResponse = [[YBRResponse alloc] initWithRequest:request];
+                pResponse.responseDuration = taskIntervalDuration;
                 
                 if(argFailure) argFailure(pResponse, error);
                 
@@ -86,11 +92,13 @@
                 
                 YBRResponse *pResponse = [[YBRResponse alloc] initWithRequest:request];
                 pResponse.responseObject = responseObject;
+                pResponse.responseDuration = taskIntervalDuration;
                 m_pResponse = responseObject;
                 if(argSuccess) argSuccess(pResponse);
             } failure:^(NSURLSessionDataTask * _Nullable task, NSError * _Nonnull error) {
                 
                 YBRResponse *pResponse = [[YBRResponse alloc] initWithRequest:request];
+                pResponse.responseDuration = taskIntervalDuration;
                 
                 if(argFailure) argFailure(pResponse, error);
                 
@@ -105,43 +113,6 @@
     }
     
 }
-
-
-//- (void)uploadRequest:(YBRRequest<YBRUploadFormable> *)request
-//              Success:(void(^)(YBRResponse* argResponse))argSuccess
-//              Failure:(void(^)(YBRResponse* argResponse, NSError* argError))argFailure {
-//    // Setup the http manager
-//
-//    AFHTTPSessionManager* pHttpSessionManager = [AFHTTPSessionManager manager];
-//    pHttpSessionManager.responseSerializer.acceptableContentTypes = [YBRRequestProxy acceptableContentTypes];
-//    [pHttpSessionManager.requestSerializer setTimeoutInterval:120];
-//
-//    // Start the post request
-//    self.dataTask = [pHttpSessionManager POST:request.url
-//                                   parameters:request.parameters
-//                    constructingBodyWithBlock:^(id <AFMultipartFormData> formData) {
-//
-//                        for (YBRUploadData *pUploadData in request.uploadData) {
-//
-//                            [formData appendPartWithFileData:pUploadData.data name:pUploadData.name fileName:pUploadData.fileName mimeType:pUploadData.mimeType];
-//                        }
-//
-//                    }
-//                                     progress:^(NSProgress * _Nonnull uploadProgress) {
-//
-//                                     } success:^(NSURLSessionDataTask * _Nonnull task, id  _Nullable responseObject) {
-//                                         YBRResponse *pResponse = [[YBRResponse alloc] initWithRequest:request];
-//                                         pResponse.responseObject = responseObject;
-//
-//                                         if(argSuccess) argSuccess(pResponse);
-//                                     }
-//                                      failure:^(NSURLSessionDataTask * _Nullable task, NSError * _Nonnull error) {
-//                                          YBRResponse *pResponse = [[YBRResponse alloc] initWithRequest:request];
-//
-//                                          if(argFailure) argFailure(pResponse, error);
-//                                      }];
-//
-//}
 
 - (void)downloadWithURL:(NSString*)argURL
                 Success:(void(^)(void))argSuccess
