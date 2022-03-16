@@ -30,14 +30,33 @@
     return [NSSet setWithObjects:@"application/json",@"text/json", @"text/plain", @"text/html", nil];
 }
 
++ (AFHTTPSessionManager *)sessionManagerWithBaseUrl:(NSString *)baseUrl {
+    
+    static dispatch_once_t once;
+    static NSMutableDictionary *dicHTTPSessionManager;
+
+    dispatch_once(&once, ^{
+        dicHTTPSessionManager = [NSMutableDictionary dictionary];
+    });
+    
+    AFHTTPSessionManager *manager = [dicHTTPSessionManager objectForKey:baseUrl];
+    if (manager == nil) {
+        manager = [[AFHTTPSessionManager alloc] initWithBaseURL:[NSURL URLWithString:baseUrl]];
+    }
+    [dicHTTPSessionManager setObject:manager forKey:baseUrl];
+    
+    
+    return manager;
+}
+
 - (void)request:(YBRRequest *)request Success:(void(^)(YBRResponse* argResponse))argSuccess Failure:(void(^)(YBRResponse* argResponse, NSError* argError))argFailure {
     
     NSURL *requestURL = [NSURL URLWithString:request.url];
     NSString *baseUrl = [NSString stringWithFormat:@"%@://%@",requestURL.scheme, requestURL.host];
     
     // Setup the http manager
-    AFHTTPSessionManager* pHttpSessionManager = [[AFHTTPSessionManager alloc] initWithBaseURL:[NSURL URLWithString:baseUrl]];
-    
+    AFHTTPSessionManager* pHttpSessionManager = [YBRRequestProxy sessionManagerWithBaseUrl:baseUrl];
+
     // reqeust duration
     __block NSTimeInterval taskIntervalDuration = 0;
     [pHttpSessionManager setTaskDidFinishCollectingMetricsBlock:^(NSURLSession * _Nonnull session, NSURLSessionTask * _Nonnull task, NSURLSessionTaskMetrics * _Nullable metrics) {
