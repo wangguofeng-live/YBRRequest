@@ -17,6 +17,60 @@
 #import "YBRResponse.h"
 #import "YBRRequestFileData.h"
 
+@interface YBRRequestProxyCache : NSObject
+
+///单例
+- (instancetype)sharedInstance;
++ (instancetype)sharedInstance;
+
+@property (nonatomic,strong)NSMapTable<id,NSURLSessionTaskMetrics *> *taskMetricsMap;
+
++ (void)setMetrics:(NSURLSessionTaskMetrics *)metrics forTask:(NSURLSessionTask *)task;
+- (void)setMetrics:(NSURLSessionTaskMetrics *)metrics forTask:(NSURLSessionTask *)task;
+
++ (NSURLSessionTaskMetrics *)gettMetricsForTask:(NSURLSessionTask *)task;
+- (NSURLSessionTaskMetrics *)getMetricsForTask:(NSURLSessionTask *)task;
+
+@end
+
+@implementation YBRRequestProxyCache
+
+- (instancetype)sharedInstance {
+    return [YBRRequestProxyCache sharedInstance];
+}
++ (instancetype)sharedInstance
+{
+    static dispatch_once_t once;
+    static YBRRequestProxyCache * __singleton__;
+    dispatch_once( &once, ^{ __singleton__ = [[[self class] alloc] init]; } );
+    return __singleton__;
+}
+
++ (void)setMetrics:(NSURLSessionTaskMetrics *)metrics forTask:(NSURLSessionTask *)task {
+    [[self sharedInstance] setMetrics:metrics forTask:task];
+}
+- (void)setMetrics:(NSURLSessionTaskMetrics *)metrics forTask:(NSURLSessionTask *)task {
+    [self.taskMetricsMap setObject:metrics forKey:task];
+}
+
++ (NSURLSessionTaskMetrics *)gettMetricsForTask:(NSURLSessionTask *)task {
+    return [[self sharedInstance] getMetricsForTask:task];
+}
+- (NSURLSessionTaskMetrics *)getMetricsForTask:(NSURLSessionTask *)task {
+    return [self.taskMetricsMap objectForKey:task];
+}
+
+- (NSMapTable *)taskMetricsMap {
+    if (!_taskMetricsMap) {
+        _taskMetricsMap = [NSMapTable weakToStrongObjectsMapTable];
+    }
+    return _taskMetricsMap;
+}
+
+@end
+
+#pragma mark - YBRRequestProxy
+
 @interface YBRRequestProxy ()
 
 @property (nonatomic, strong)NSURLSessionDataTask *dataTask;
@@ -42,6 +96,10 @@
     AFHTTPSessionManager *manager = [dicHTTPSessionManager objectForKey:baseUrl];
     if (manager == nil) {
         manager = [[AFHTTPSessionManager alloc] initWithBaseURL:[NSURL URLWithString:baseUrl]];
+        [manager setTaskDidFinishCollectingMetricsBlock:^(NSURLSession * _Nonnull session, NSURLSessionTask * _Nonnull task, NSURLSessionTaskMetrics * _Nullable metrics) {
+            //cache task metrics
+            [YBRRequestProxyCache setMetrics:metrics forTask:task];
+        }];
     }
     [dicHTTPSessionManager setObject:manager forKey:baseUrl];
     
@@ -57,13 +115,6 @@
     // Setup the http manager
     AFHTTPSessionManager* pHttpSessionManager = [YBRRequestProxy sessionManagerWithBaseUrl:baseUrl];
 
-    // reqeust duration
-    __block NSTimeInterval taskIntervalDuration = 0;
-    [pHttpSessionManager setTaskDidFinishCollectingMetricsBlock:^(NSURLSession * _Nonnull session, NSURLSessionTask * _Nonnull task, NSURLSessionTaskMetrics * _Nullable metrics) {
-        taskIntervalDuration = metrics.taskInterval.duration;
-    }];
-    
-    
     //content types
     pHttpSessionManager.responseSerializer.acceptableContentTypes = [YBRRequestProxy acceptableContentTypes]; //接收类型
     
@@ -88,12 +139,18 @@
                 
             } success:^(NSURLSessionDataTask * _Nonnull task, id  _Nullable responseObject) {
                 
+                // reqeust duration
+                NSTimeInterval taskIntervalDuration = [YBRRequestProxyCache gettMetricsForTask:task].taskInterval.duration;
+                
                 YBRResponse *pResponse = [[YBRResponse alloc] initWithRequest:request];
                 pResponse.responseObject = responseObject;
                 pResponse.responseDuration = taskIntervalDuration;
                 m_pResponse = responseObject;
                 if(argSuccess) argSuccess(pResponse);
             } failure:^(NSURLSessionDataTask * _Nullable task, NSError * _Nonnull error) {
+                
+                // reqeust duration
+                NSTimeInterval taskIntervalDuration = [YBRRequestProxyCache gettMetricsForTask:task].taskInterval.duration;
                 
                 YBRResponse *pResponse = [[YBRResponse alloc] initWithRequest:request];
                 pResponse.responseDuration = taskIntervalDuration;
@@ -109,12 +166,18 @@
                 
             } success:^(NSURLSessionDataTask * _Nonnull task, id  _Nullable responseObject) {
                 
+                // reqeust duration
+                NSTimeInterval taskIntervalDuration = [YBRRequestProxyCache gettMetricsForTask:task].taskInterval.duration;
+                
                 YBRResponse *pResponse = [[YBRResponse alloc] initWithRequest:request];
                 pResponse.responseObject = responseObject;
                 pResponse.responseDuration = taskIntervalDuration;
                 m_pResponse = responseObject;
                 if(argSuccess) argSuccess(pResponse);
             } failure:^(NSURLSessionDataTask * _Nullable task, NSError * _Nonnull error) {
+                
+                // reqeust duration
+                NSTimeInterval taskIntervalDuration = [YBRRequestProxyCache gettMetricsForTask:task].taskInterval.duration;
                 
                 YBRResponse *pResponse = [[YBRResponse alloc] initWithRequest:request];
                 pResponse.responseDuration = taskIntervalDuration;
