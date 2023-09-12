@@ -69,19 +69,14 @@ typedef void(^YBRRequestFailureBlock)(YBRResponse* argResponse, NSError* argErro
 YBRRequestFormable,
 YBRRequestToken
 >
-{
-    NSString* m_strRequestTag;              // Tag to distinguish the request
-    NSString* m_strUrl;                     // The URL of the request
-    NSMutableDictionary* m_dicParams;              // The parameters
-    NSDictionary* m_dicResponse;            // The dictionary after the JASON parsing
-    BOOL m_bSilent;                         // If pop up error message when the request failed
-    BOOL m_bSucceed;                        // YES if the request succeeded.
-}
 
 @property (readonly) NSString* requestTag;
 @property (readonly) NSDictionary* response;
 @property (assign) BOOL silent;
 @property (assign) BOOL succeed;
+
+///用json的方式传递参数
+@property (assign) BOOL isJsonRequest;
 
 @property (nonatomic,assign)YBRFormableMethod httpMethod;
 
@@ -123,6 +118,8 @@ YBRRequestToken
 
 - (void)SetParamValues:(NSDictionary<NSString *,id> *)argParams;
 
+- (void)SetParamValuesForKeysWithDictionary:(NSDictionary*)argDic forKey:(NSString *)argKey;
+
 - (void)SetParamData:(NSData*)argValue forKey:(NSString *)argKey;
 
 // Set the image data parameter for the request
@@ -131,6 +128,10 @@ YBRRequestToken
 // Set the mp3 data parameter for the request
 - (void)AddMP3Data:(NSData*)argData forKey:(NSString *)argKey;
 
+// Set the headers for the request
+- (void)SetHeaderValue:(NSString*)argValue forKey:(NSString *)argKey;
+
+- (void)SetHeaderValues:(NSDictionary<NSString *,id> *)argHeaders;
 
 #pragma mark -
 @property (nonatomic, copy)YBRRequestSuccessBlock successBlock;

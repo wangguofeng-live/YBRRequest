@@ -8,7 +8,7 @@
 
 #import "YBRRequest.h"
 
-#import <AFNetworking/AFNetworking.h>
+//#import <AFNetworking/AFNetworking.h>
 
 #import "YBRRequestProxy.h"
 #import "YBRRequestFileData.h"
@@ -28,9 +28,16 @@ NSErrorDomain const YBRRequestErrorDomain = @"YBRRequestErrorDomain";
 @interface YBRRequest ()
 {
     BOOL _isBaseUrl;
+    NSString* m_strRequestTag;              // Tag to distinguish the request
+    NSString* m_strUrl;                     // The URL of the request
+    NSMutableDictionary* m_dicHeaders;      // The headers
+    NSMutableDictionary* m_dicParams;       // The parameters
+    NSDictionary* m_dicResponse;            // The dictionary after the JASON parsing
+    BOOL m_bSilent;                         // If pop up error message when the request failed
+    BOOL m_bSucceed;                        // YES if the request succeeded.
 }
 
-@property (nonatomic, strong)NSURLSessionDataTask *dataTask;
+@property (nonatomic, strong)YBRRequestProxy *requestProxy;
 
 @property (nonatomic,strong)NSMutableArray<YBRRequestFileData *> *fileDataArray;
 
@@ -62,6 +69,7 @@ static id <YBRResponseHandlerProtocol> s_pResponseHandler = nil;
         _isBaseUrl = NO;
         m_strUrl = argUrl;
         m_strRequestTag = argTag;
+        m_dicHeaders = [[NSMutableDictionary alloc] init];
         m_dicParams = [[NSMutableDictionary alloc] init];
         m_dicResponse = nil;
         
@@ -83,6 +91,7 @@ static id <YBRResponseHandlerProtocol> s_pResponseHandler = nil;
         _isBaseUrl = YES;
         m_strUrl = argBaseUrl;
         m_strRequestTag = argTag;
+        m_dicHeaders = [[NSMutableDictionary alloc] init];
         m_dicParams = [[NSMutableDictionary alloc] init];
         m_dicResponse = nil;
         
@@ -124,6 +133,10 @@ static id <YBRResponseHandlerProtocol> s_pResponseHandler = nil;
     [m_dicParams setValue:argValue forKey:argKey];
 }
 
+- (void)SetParamValuesForKeysWithDictionary:(NSDictionary*)argDic forKey:(NSString *)argKey {
+    [m_dicParams setValue:argDic forKey:argKey];
+}
+
 - (void)SetParamValues:(NSDictionary<NSString *,id> *)argParams {
     [m_dicParams setValuesForKeysWithDictionary:argParams];
 }
@@ -160,6 +173,14 @@ static id <YBRResponseHandlerProtocol> s_pResponseHandler = nil;
     self.timeoutInterval = YBRREQUEST_UPLOAD_TIMEOUTINTERVAL;
 }
 
+- (void)SetHeaderValue:(NSString*)argValue forKey:(NSString *)argKey {
+    [m_dicHeaders setObject:argValue forKey:argKey];
+}
+
+- (void)SetHeaderValues:(NSDictionary<NSString *,id> *)argHeaders {
+    [m_dicHeaders setValuesForKeysWithDictionary:argHeaders];
+}
+
 #pragma mark -
 - (void)StartGETRequestWithSuccess:(YBRRequestSuccessBlock)argSuccess
                         andFailure:(YBRRequestFailureBlock)argFailure {
@@ -169,6 +190,7 @@ static id <YBRResponseHandlerProtocol> s_pResponseHandler = nil;
     
     
     YBRRequestProxy *proxy = [YBRRequestProxy new];
+    self.requestProxy = proxy;
     [proxy request:self Success:^(YBRResponse *argResponse) {
         
         [self disposeRequestSuccessWihtResponse:argResponse];
@@ -188,6 +210,7 @@ static id <YBRResponseHandlerProtocol> s_pResponseHandler = nil;
     
     
     YBRRequestProxy *proxy = [YBRRequestProxy new];
+    self.requestProxy = proxy;
     [proxy request:self Success:^(YBRResponse *argResponse) {
         
         [self disposeRequestSuccessWihtResponse:argResponse];
@@ -287,11 +310,11 @@ REQUEST_SUSPEND:    //请求中止，不做任何事情
 #pragma mark - YBRRequestToken
 - (void)Cancel
 {
-    [self.dataTask cancel];
+    [self.requestProxy Cancel];
 }
 
 - (BOOL)IsRunning {
-    return self.dataTask.state == NSURLSessionTaskStateRunning;
+    return [self.requestProxy IsRunning];
 }
 
 #pragma mark - YBRRequestFormable
@@ -334,9 +357,12 @@ REQUEST_SUSPEND:    //请求中止，不做任何事情
 
 - (NSDictionary<NSString *,NSString *> *)headers {
     if (s_pParmsProvider && [s_pParmsProvider respondsToSelector:@selector(ybr_headersWithUrl:andTag:forRequest:)]) {
-        return [s_pParmsProvider ybr_headersWithUrl:m_strUrl andTag:m_strRequestTag forRequest:self];
+        NSDictionary *dicProviderHeaders = [s_pParmsProvider ybr_headersWithUrl:m_strUrl andTag:m_strRequestTag forRequest:self];
+        if (dicProviderHeaders != nil && [dicProviderHeaders isKindOfClass:[NSDictionary class]]) {
+            [m_dicHeaders setValuesForKeysWithDictionary:dicProviderHeaders];
+        }
     }
-    return @{};
+    return m_dicHeaders;
 }
 
 - (NSDictionary<NSString *,id> *)parameters {
@@ -394,7 +420,9 @@ REQUEST_SUSPEND:    //请求中止，不做任何事情
 - (void)downloadWithURL:(NSString*)argURL
                 Success:(void(^)(void))argSuccess
 {
-    [[YBRRequestProxy new] downloadWithURL:argURL Success:argSuccess];
+    YBRRequestProxy *proxy = [YBRRequestProxy new];
+    self.requestProxy = proxy;
+    [proxy downloadWithURL:argURL Success:argSuccess];
 }
 
 @end

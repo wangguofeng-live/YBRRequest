@@ -16,7 +16,7 @@ Pod::Spec.new do |s|
   #
 
   s.name         = "YBRRequest"
-  s.version      = "0.0.14"
+  s.version      = "0.0.15"
   s.summary      = "YBRRequest 网路通讯库"
 
   # This description is used to generate tags and improve search results.
@@ -134,5 +134,6 @@ Pod::Spec.new do |s|
   # s.dependency "JSONKit", "~> 1.4"
   # s.xcconfig = { "HEADER_SEARCH_PATHS" => "$(SDKROOT)/AFNetworking" }
   s.dependency "AFNetworking", "~> 4.0.1"
+  s.dependency "Alamofire"
 
 end

@@ -8,10 +8,7 @@
 
 #import "YBRRequestProxy.h"
 
-#import <AFNetworking/AFNetworking.h>
-//#import "NSString+YBRTools.h"
-//#import <Crashlytics/Answers.h>
-//#import <CocoaLumberjack/CocoaLumberjack.h>
+@import AFNetworking;
 
 #import "YBRRequest.h"
 #import "YBRResponse.h"
@@ -114,7 +111,11 @@
     
     // Setup the http manager
     AFHTTPSessionManager* pHttpSessionManager = [YBRRequestProxy sessionManagerWithBaseUrl:baseUrl];
-
+    
+    if (request.isJsonRequest) {
+        pHttpSessionManager.requestSerializer = [AFJSONRequestSerializer serializer];
+    }
+    
     //content types
     pHttpSessionManager.responseSerializer.acceptableContentTypes = [YBRRequestProxy acceptableContentTypes]; //接收类型
     
@@ -128,36 +129,64 @@
     switch (request.method) {
         case YBRFormableMethod_POST:
         {
-            self.dataTask = [pHttpSessionManager POST:request.url parameters:request.parameters headers:request.headers constructingBodyWithBlock:^(id<AFMultipartFormData>  _Nonnull formData) {
+            if (request.isJsonRequest) {
                 
-                //挂载文件
-                 for (YBRRequestFileData *pFileData in [request getFileDataArray]) {
-                     [formData appendPartWithFileData:pFileData.fileData name:pFileData.name fileName:pFileData.fileName mimeType:pFileData.mimeType];
-                 }
+                self.dataTask = [pHttpSessionManager POST:request.url parameters:request.parameters headers:request.headers progress:^(NSProgress * _Nonnull uploadProgress) {
+                    
+                } success:^(NSURLSessionDataTask * _Nonnull task, id  _Nullable responseObject) {
+                    
+                    // reqeust duration
+                    NSTimeInterval taskIntervalDuration = [YBRRequestProxyCache gettMetricsForTask:task].taskInterval.duration;
+                    
+                    YBRResponse *pResponse = [[YBRResponse alloc] initWithRequest:request];
+                    pResponse.responseObject = responseObject;
+                    pResponse.responseDuration = taskIntervalDuration;
+                    m_pResponse = responseObject;
+                    if(argSuccess) argSuccess(pResponse);
+                } failure:^(NSURLSessionDataTask * _Nullable task, NSError * _Nonnull error) {
+                    
+                    // reqeust duration
+                    NSTimeInterval taskIntervalDuration = [YBRRequestProxyCache gettMetricsForTask:task].taskInterval.duration;
+                    
+                    YBRResponse *pResponse = [[YBRResponse alloc] initWithRequest:request];
+                    pResponse.responseDuration = taskIntervalDuration;
+                    
+                    if(argFailure) argFailure(pResponse, error);
+                    
+                }];
+            }else {
                 
-            } progress:^(NSProgress * _Nonnull uploadProgress) {
-                
-            } success:^(NSURLSessionDataTask * _Nonnull task, id  _Nullable responseObject) {
-                
-                // reqeust duration
-                NSTimeInterval taskIntervalDuration = [YBRRequestProxyCache gettMetricsForTask:task].taskInterval.duration;
-                
-                YBRResponse *pResponse = [[YBRResponse alloc] initWithRequest:request];
-                pResponse.responseObject = responseObject;
-                pResponse.responseDuration = taskIntervalDuration;
-                m_pResponse = responseObject;
-                if(argSuccess) argSuccess(pResponse);
-            } failure:^(NSURLSessionDataTask * _Nullable task, NSError * _Nonnull error) {
-                
-                // reqeust duration
-                NSTimeInterval taskIntervalDuration = [YBRRequestProxyCache gettMetricsForTask:task].taskInterval.duration;
-                
-                YBRResponse *pResponse = [[YBRResponse alloc] initWithRequest:request];
-                pResponse.responseDuration = taskIntervalDuration;
-                
-                if(argFailure) argFailure(pResponse, error);
-                
-            }];
+                self.dataTask = [pHttpSessionManager POST:request.url parameters:request.parameters headers:request.headers constructingBodyWithBlock:^(id<AFMultipartFormData>  _Nonnull formData) {
+                    
+                    //挂载文件
+                     for (YBRRequestFileData *pFileData in [request getFileDataArray]) {
+                         [formData appendPartWithFileData:pFileData.fileData name:pFileData.name fileName:pFileData.fileName mimeType:pFileData.mimeType];
+                     }
+                    
+                } progress:^(NSProgress * _Nonnull uploadProgress) {
+                    
+                } success:^(NSURLSessionDataTask * _Nonnull task, id  _Nullable responseObject) {
+                    
+                    // reqeust duration
+                    NSTimeInterval taskIntervalDuration = [YBRRequestProxyCache gettMetricsForTask:task].taskInterval.duration;
+                    
+                    YBRResponse *pResponse = [[YBRResponse alloc] initWithRequest:request];
+                    pResponse.responseObject = responseObject;
+                    pResponse.responseDuration = taskIntervalDuration;
+                    m_pResponse = responseObject;
+                    if(argSuccess) argSuccess(pResponse);
+                } failure:^(NSURLSessionDataTask * _Nullable task, NSError * _Nonnull error) {
+                    
+                    // reqeust duration
+                    NSTimeInterval taskIntervalDuration = [YBRRequestProxyCache gettMetricsForTask:task].taskInterval.duration;
+                    
+                    YBRResponse *pResponse = [[YBRResponse alloc] initWithRequest:request];
+                    pResponse.responseDuration = taskIntervalDuration;
+                    
+                    if(argFailure) argFailure(pResponse, error);
+                    
+                }];
+            }
         }
             break;
         case YBRFormableMethod_GET:
@@ -286,6 +315,15 @@
     BOOL isReachable = flags & kSCNetworkFlagsReachable;
     BOOL needsConnection = flags & kSCNetworkFlagsConnectionRequired;
     return (isReachable && !needsConnection) ? YES : NO;
+}
+
+//MARK: YBRRequestToken
+- (BOOL)IsRunning {
+    return self.dataTask != nil && self.dataTask.state == NSURLSessionTaskStateRunning;
+}
+
+- (void)Cancel {
+    [self.dataTask cancel];
 }
 
 @end

@@ -9,8 +9,9 @@
 #import <Foundation/Foundation.h>
 @class YBRRequest;
 @class YBRResponse;
+#import "YBRRequestToken.h"
 
-@interface YBRRequestProxy : NSObject
+@interface YBRRequestProxy : NSObject <YBRRequestToken>
 
 @property (readonly) id response;
 
