@@ -120,6 +120,8 @@ YBRRequestToken
 
 - (void)SetParamValuesForKeysWithDictionary:(NSDictionary*)argDic forKey:(NSString *)argKey;
 
+- (void)SetParamValuesForKeysWithArray:(NSArray*)argArray forKey:(NSString *)argKey;
+
 - (void)SetParamData:(NSData*)argValue forKey:(NSString *)argKey;
 
 // Set the image data parameter for the request

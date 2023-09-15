@@ -137,6 +137,10 @@ static id <YBRResponseHandlerProtocol> s_pResponseHandler = nil;
     [m_dicParams setValue:argDic forKey:argKey];
 }
 
+- (void)SetParamValuesForKeysWithArray:(NSArray*)argArray forKey:(NSString *)argKey {
+    [m_dicParams setValue:argArray forKey:argKey];
+}
+
 - (void)SetParamValues:(NSDictionary<NSString *,id> *)argParams {
     [m_dicParams setValuesForKeysWithDictionary:argParams];
 }
