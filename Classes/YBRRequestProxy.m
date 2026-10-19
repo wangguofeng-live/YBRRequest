@@ -82,26 +82,23 @@
 }
 
 + (AFHTTPSessionManager *)sessionManagerWithBaseUrl:(NSString *)baseUrl {
-    
-    static dispatch_once_t once;
     static NSMutableDictionary *dicHTTPSessionManager;
-
-    dispatch_once(&once, ^{
-        dicHTTPSessionManager = [NSMutableDictionary dictionary];
-    });
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{ dicHTTPSessionManager = [NSMutableDictionary dictionary]; });
     
-    AFHTTPSessionManager *manager = [dicHTTPSessionManager objectForKey:baseUrl];
-    if (manager == nil) {
-        manager = [[AFHTTPSessionManager alloc] initWithBaseURL:[NSURL URLWithString:baseUrl]];
-        [manager setTaskDidFinishCollectingMetricsBlock:^(NSURLSession * _Nonnull session, NSURLSessionTask * _Nonnull task, NSURLSessionTaskMetrics * _Nullable metrics) {
-            //cache task metrics
-            [YBRRequestProxyCache setMetrics:metrics forTask:task];
-        }];
+    @synchronized (dicHTTPSessionManager) {
+        AFHTTPSessionManager *manager = dicHTTPSessionManager[baseUrl];
+        if (!manager) {
+            manager = [[AFHTTPSessionManager alloc] initWithBaseURL:[NSURL URLWithString:baseUrl]];
+            [manager setTaskDidFinishCollectingMetricsBlock:^(NSURLSession *s, NSURLSessionTask *t, NSURLSessionTaskMetrics *m) {
+                [YBRRequestProxyCache setMetrics:m forTask:t];
+            }];
+            // 会话级配置只设一次，之后不再碰 manager；每请求可变的 serializer/timeout/securityPolicy 在 startTaskWithRequest: 锁内设置
+            manager.responseSerializer.acceptableContentTypes = [YBRRequestProxy acceptableContentTypes];
+            dicHTTPSessionManager[baseUrl] = manager;   // 只在 miss 时写
+        }
+        return manager;
     }
-    [dicHTTPSessionManager setObject:manager forKey:baseUrl];
-    
-    
-    return manager;
 }
 
 - (void)request:(YBRRequest *)request Success:(void(^)(YBRResponse* argResponse))argSuccess Failure:(void(^)(YBRResponse* argResponse, NSError* argError))argFailure {
@@ -111,21 +108,31 @@
     
     // Setup the http manager
     AFHTTPSessionManager* pHttpSessionManager = [YBRRequestProxy sessionManagerWithBaseUrl:baseUrl];
-    
-    if (request.isJsonRequest) {
-        pHttpSessionManager.requestSerializer = [AFJSONRequestSerializer serializer];
+
+    // manager 是按 baseUrl 共享的，而 requestSerializer/timeoutInterval/securityPolicy 是每请求可变状态，
+    // 必须把「配置 + 构建任务」整体加锁：POST/GET 便捷方法内部会同步构建 NSURLRequest，
+    // timeout 在构建时即固化进 request，出锁后其他并发请求再改 serializer 不会互相污染。
+    // 注意：startTaskWithRequest:... 只能在此锁内调用。
+    @synchronized (pHttpSessionManager) {
+        [self startTaskWithRequest:request manager:pHttpSessionManager Success:argSuccess Failure:argFailure];
     }
-    
-    //content types
-    pHttpSessionManager.responseSerializer.acceptableContentTypes = [YBRRequestProxy acceptableContentTypes]; //接收类型
-    
-    //timeout
-    [pHttpSessionManager.requestSerializer setTimeoutInterval:request.timeoutInterval]; //超时时间
-    
+}
+
+// 调用方必须已持有 @synchronized(pHttpSessionManager) 锁
+- (void)startTaskWithRequest:(YBRRequest *)request
+                     manager:(AFHTTPSessionManager *)pHttpSessionManager
+                     Success:(void(^)(YBRResponse* argResponse))argSuccess
+                     Failure:(void(^)(YBRResponse* argResponse, NSError* argError))argFailure {
+
+    //每请求重建 serializer，避免共享 manager 上残留上一次请求的 JSON/表单状态
+    AFHTTPRequestSerializer *pRequestSerializer = request.isJsonRequest ? [AFJSONRequestSerializer serializer] : [AFHTTPRequestSerializer serializer];
+    pRequestSerializer.timeoutInterval = request.timeoutInterval; //超时时间
+    pHttpSessionManager.requestSerializer = pRequestSerializer;
+
     //setup security plicy
     id pSecurityPolicy = [request getSecurityPolicy];
     if (pSecurityPolicy) [pHttpSessionManager setSecurityPolicy:pSecurityPolicy];
-    
+
     switch (request.method) {
         case YBRFormableMethod_POST:
         {
